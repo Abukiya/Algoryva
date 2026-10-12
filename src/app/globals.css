@@ -1,0 +1,169 @@
+@import "@fontsource-variable/bricolage-grotesque/wdth.css";
+@import "@fontsource-variable/jetbrains-mono/wght.css";
+@tailwind base; @tailwind components; @tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Design tokens. Light = "paper", dark = "ink". Colours are RGB triplets.
+   Algoryva palette: neutrals and brand blue are taken from the official logo sheet
+   (paper #F4FAFA, ink #20283B, wordmark navy #1C2433, royal blue #3A59E0).
+   Level hues (lv1..lv6) run cool to hot: the further along the curriculum, the warmer the colour.
+   ------------------------------------------------------------------ */
+:root {
+  --font-sans: "Bricolage Grotesque Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --bg: 244 250 250; --surface: 255 255 255; --sunken: 233 240 244;
+  --line: 218 227 234; --line-strong: 186 200 214;
+  --fg: 28 36 51; --soft: 60 72 94; --muted: 94 106 128;
+  --brand: 58 89 224; --brand-fg: 255 255 255; --brand-soft: 229 236 253;
+  --logo-word: 28 36 51;
+  --ok: 10 128 100; --warn: 165 96 0; --bad: 200 30 60;
+  --lv1: 13 140 128; --lv2: 88 148 20; --lv3: 196 132 0; --lv4: 224 96 20; --lv5: 214 40 84; --lv6: 128 62 230;
+  --code-bg: 249 252 253; --code-fg: 28 36 51;
+  --tok-kw: 109 40 217; --tok-str: 10 120 92; --tok-num: 163 90 0; --tok-com: 120 126 160; --tok-fn: 29 78 216; --tok-bi: 190 24 93;
+  --e1: 0 1px 0 rgb(28 36 51 / .04);
+  --e2: 0 1px 2px rgb(28 36 51 / .06), 0 10px 28px -10px rgb(28 36 51 / .14);
+  --e3: 0 2px 4px rgb(28 36 51 / .06), 0 28px 56px -14px rgb(28 36 51 / .28);
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: 21 27 41; --surface: 32 40 59; --sunken: 15 20 32;
+  --line: 48 58 82; --line-strong: 72 84 112;
+  --fg: 232 238 247; --soft: 184 194 212; --muted: 142 154 176;
+  --brand: 120 156 255; --brand-fg: 10 14 32; --brand-soft: 31 44 84;
+  --logo-word: 250 254 255;
+  --ok: 52 211 165; --warn: 245 178 60; --bad: 255 107 132;
+  --lv1: 45 212 191; --lv2: 163 230 53; --lv3: 250 204 21; --lv4: 251 146 60; --lv5: 251 113 133; --lv6: 167 139 250;
+  --code-bg: 15 20 32; --code-fg: 226 232 244;
+  --tok-kw: 190 160 255; --tok-str: 94 234 190; --tok-num: 252 196 90; --tok-com: 118 126 168; --tok-fn: 147 180 255; --tok-bi: 249 168 212;
+  --e1: 0 1px 0 rgb(0 0 0 / .3);
+  --e2: 0 1px 2px rgb(0 0 0 / .4), 0 12px 30px -10px rgb(0 0 0 / .55);
+  --e3: 0 2px 4px rgb(0 0 0 / .4), 0 30px 60px -14px rgb(0 0 0 / .7);
+  color-scheme: dark;
+}
+/* No-JS fallback: follow the OS until the theme script has run. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: 21 27 41; --surface: 32 40 59; --sunken: 15 20 32; --line: 48 58 82; --line-strong: 72 84 112;
+    --fg: 232 238 247; --soft: 184 194 212; --muted: 142 154 176; --brand: 120 156 255; --brand-fg: 10 14 32; --brand-soft: 31 44 84; --logo-word: 250 254 255;
+    --ok: 52 211 165; --warn: 245 178 60; --bad: 255 107 132; color-scheme: dark;
+  }
+}
+
+@layer base {
+  html { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; scroll-padding-top: 5rem; }
+  body { @apply bg-bg text-fg; font-size: 15.5px; line-height: 1.55; }
+  h1, h2, h3, h4 { @apply font-bold text-fg; letter-spacing: -0.018em; text-wrap: balance; }
+  p { text-wrap: pretty; }
+  ::selection { background: rgb(var(--brand) / .25); }
+  :focus-visible { outline: 2px solid rgb(var(--brand)); outline-offset: 2px; }
+  code, kbd, pre, samp { font-family: var(--font-mono); }
+  button, [role="button"], summary { cursor: pointer; }
+  summary { list-style: none; } summary::-webkit-details-marker { display: none; }
+  textarea { resize: vertical; }
+}
+
+@layer components {
+  /* Layout */
+  .page { @apply mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-10 lg:py-10; }
+  .page-wide { @apply mx-auto w-full max-w-[88rem] px-4 py-5 sm:px-6 lg:px-8 lg:py-8; }
+  .display { font-stretch: 84%; font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; }
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* Buttons */
+  .btn { @apply inline-flex h-10 select-none items-center justify-center gap-2 whitespace-nowrap rounded-ctl border border-transparent px-4 text-sm font-semibold transition duration-150 active:translate-y-px disabled:pointer-events-none disabled:opacity-50; }
+  .btn-primary { @apply bg-brand text-brand-fg hover:bg-brand/90; box-shadow: inset 0 -2px 0 rgb(0 0 0 / .16), 0 1px 2px rgb(var(--brand) / .35); }
+  .btn-secondary { @apply border-line-strong bg-surface text-fg hover:bg-sunken; }
+  .btn-quiet { @apply text-soft hover:bg-sunken hover:text-fg; }
+  .btn-danger { @apply border-bad/30 text-bad hover:bg-bad/10; }
+  .btn-sm { @apply h-8 rounded-lg px-3 text-[13px]; }
+  .btn-lg { @apply h-12 rounded-xl px-6 text-base; }
+  .btn-icon { @apply w-10 px-0; }
+  .btn-sm.btn-icon { @apply w-8 px-0; }
+
+  /* Fields */
+  .input { @apply h-10 w-full rounded-ctl border border-line-strong bg-surface px-3 text-sm text-fg transition placeholder:text-muted/80 hover:border-muted/60 focus:border-brand focus:outline-none focus:ring-4 focus:ring-brand/15 disabled:opacity-60; }
+  textarea.input { @apply h-auto py-2.5 leading-relaxed; }
+  select.input { @apply appearance-none pr-9; background-repeat: no-repeat; background-position: right .7rem center;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238795ab' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+  .label { @apply mb-1.5 block text-[13px] font-semibold text-soft; }
+  .hint { @apply mt-1.5 text-xs text-muted; }
+  .field-error { @apply flex min-h-5 items-start gap-1.5 text-sm font-medium text-bad; }
+
+  /* Surfaces */
+  .card { @apply rounded-card border border-line bg-surface shadow-e1; }
+  .card-pad { @apply p-5 sm:p-6; }
+  .card-link { @apply block transition duration-150 hover:-translate-y-px hover:border-line-strong hover:shadow-e2; }
+  .well { @apply rounded-card border border-line bg-sunken; }
+
+  /* Chips & badges */
+  .chip { @apply inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full border border-line bg-sunken px-2.5 text-xs font-semibold text-soft; }
+  .chip-brand { @apply border-brand/25 bg-brand/10 text-brand; }
+  .chip-ok { @apply border-ok/25 bg-ok/10 text-ok; }
+  .chip-warn { @apply border-warn/25 bg-warn/10 text-warn; }
+  .chip-bad { @apply border-bad/25 bg-bad/10 text-bad; }
+  .kbd { @apply inline-flex h-5 min-w-5 items-center justify-center rounded border border-line-strong bg-surface px-1 font-mono text-[11px] font-medium text-muted; box-shadow: 0 1px 0 rgb(var(--line-strong)); }
+
+  /* Segmented tabs (links or buttons) */
+  .tabs { @apply inline-flex items-center gap-1 rounded-xl border border-line bg-sunken p-1; }
+  .tab { @apply inline-flex h-8 items-center gap-2 rounded-lg px-3 text-[13px] font-semibold text-muted transition hover:text-fg; }
+  .tab[aria-current="page"], .tab[aria-selected="true"], .tab[data-active="true"] { @apply bg-surface text-fg shadow-e2; }
+
+  /* Tables */
+  .table-clean { @apply w-full border-separate border-spacing-0 text-left text-sm; }
+  .table-clean th { @apply sticky top-0 border-b border-line bg-surface px-4 py-2.5 text-xs font-semibold text-muted; }
+  .table-clean td { @apply border-b border-line px-4 py-3 align-middle; }
+  .table-clean tbody tr { @apply transition-colors hover:bg-sunken/60; }
+  .table-clean tbody tr:last-child td { @apply border-b-0; }
+
+  /* Loading */
+  .skeleton { @apply relative overflow-hidden rounded-lg bg-sunken; }
+  .skeleton::after { content: ""; @apply absolute inset-0 -translate-x-full animate-shimmer; background: linear-gradient(90deg, transparent, rgb(var(--line) / .7), transparent); }
+
+  /* Backgrounds with meaning: grid paper is the platform's motif (matrices, DP tables, graphs). */
+  .grid-paper { background-image: linear-gradient(rgb(var(--line) / .7) 1px, transparent 1px), linear-gradient(90deg, rgb(var(--line) / .7) 1px, transparent 1px); background-size: 28px 28px; }
+  .grid-fade { -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 25%, transparent 78%); mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 25%, transparent 78%); }
+
+  /* Progress bar */
+  .bar { @apply h-2 overflow-hidden rounded-full bg-sunken; box-shadow: inset 0 0 0 1px rgb(var(--line)); }
+  .bar > span { @apply block h-full origin-left animate-fillbar rounded-full bg-brand; }
+
+  /* Brand: the wordmark follows the theme (navy on paper, white on ink); the mark is theme-independent. */
+  .algoryva-wordmark { color: rgb(var(--logo-word)); }
+
+  /* Long-form lesson text */
+  .prose-lesson { font-size: 1.0625rem; line-height: 1.78; color: rgb(var(--fg) / .92); }
+  .prose-lesson p + p { margin-top: 1rem; }
+  .prose-lesson code:not(pre code), .inline-code { @apply rounded-md border border-line bg-sunken px-1.5 py-0.5 text-[0.86em] font-medium text-fg; }
+
+  /* Code */
+  .code-block { @apply overflow-hidden rounded-xl border border-line; background: rgb(var(--code-bg)); color: rgb(var(--code-fg)); }
+  .code-block pre { @apply overflow-x-auto p-4 text-[13.5px] leading-[1.7]; tab-size: 4; }
+  .tok-kw { color: rgb(var(--tok-kw)); font-weight: 600; } .tok-str { color: rgb(var(--tok-str)); } .tok-num { color: rgb(var(--tok-num)); }
+  .tok-com { color: rgb(var(--tok-com)); font-style: italic; } .tok-fn { color: rgb(var(--tok-fn)); } .tok-bi { color: rgb(var(--tok-bi)); }
+}
+
+/* Reading progress: a scroll-linked bar where the browser supports it, hidden elsewhere. */
+.read-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .read-progress { display: block; transform-origin: left; animation: fillbar linear both; animation-timeline: scroll(root); animation-duration: auto !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .read-progress { animation-duration: auto !important; }
+}
+@media print { header, aside, nav { display: none !important; } }
+
+/* Collapsible sidebar (laptop and up). State lives on <html data-sidebar="collapsed">, set before paint by the inline script in layout.tsx,
+   so these rules are the whole mechanism: no layout flash, no hydration mismatch. Expanded = 15.5rem, collapsed = icon rail. */
+.app-shell { --sb: 15.5rem; }
+html[data-sidebar="collapsed"] .app-shell { --sb: 4.5rem; }
+@media (min-width: 1024px) { .app-shell { transition: grid-template-columns .2s var(--ease); } }
+.sb-show, .sb-icon { display: none; }
+html[data-sidebar="collapsed"] .sb-hide, html[data-sidebar="collapsed"] .sb-label { display: none; }
+html[data-sidebar="collapsed"] .sb-show { display: flex; }
+html[data-sidebar="collapsed"] .sb-icon { display: block; }
+html[data-sidebar="collapsed"] .sb-item { justify-content: center; padding-inline: 0; }
+html[data-sidebar="collapsed"] .sb-stack { flex-direction: column; }
+html[data-sidebar="collapsed"] .sb-stack > * { flex: none; }
