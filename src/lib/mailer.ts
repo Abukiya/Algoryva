@@ -1,5 +1,6 @@
 import "server-only";
 import { BRAND, siteUrl } from "@/lib/brand";
+import { brevoBody } from "@/lib/email-address";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -20,15 +21,25 @@ function renderHtml(text: string): string {
 </table></body></html>`;
 }
 
-/** Sends through Resend if RESEND_API_KEY and EMAIL_FROM are set; otherwise prints the message (development). */
+/**
+ * Sends through Resend when RESEND_API_KEY is set, otherwise through Brevo when BREVO_API_KEY is set (Brevo's free plan
+ * needs no domain: verify one sender address in Brevo and use it as EMAIL_FROM). With neither, or without EMAIL_FROM,
+ * the message is printed to the server console (development).
+ */
 export async function sendEmail(to: string, subject: string, text: string) {
-  const key = process.env.RESEND_API_KEY, from = process.env.EMAIL_FROM;
-  if (!key || !from) { console.log(`[email not configured]\nTo: ${to}\nSubject: ${subject}\n${text}\n`); return; }
+  const resendKey = process.env.RESEND_API_KEY, brevoKey = process.env.BREVO_API_KEY, from = process.env.EMAIL_FROM;
+  if (!from || (!resendKey && !brevoKey)) { console.log(`[email not configured]\nTo: ${to}\nSubject: ${subject}\n${text}\n`); return; }
+  const html = renderHtml(text);
   try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject, text, html: renderHtml(text) }),
-    });
+    const res = resendKey
+      ? await fetch("https://api.resend.com/emails", {
+          method: "POST", headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ from, to, subject, text, html }),
+        })
+      : await fetch("https://api.brevo.com/v3/smtp/email", {
+          method: "POST", headers: { "api-key": brevoKey!, "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(brevoBody({ from, to, subject, text, html })),
+        });
     if (!res.ok) console.error("Email provider rejected the message:", res.status);
   } catch (e) { console.error("Email send failed:", (e as Error).message); }
 }

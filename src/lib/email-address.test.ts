@@ -1,0 +1,26 @@
+import { describe, expect, it } from "vitest";
+import { brevoBody, parseFrom } from "./email-address";
+
+describe("parseFrom", () => {
+  it("splits a display name and address", () => {
+    expect(parseFrom("Algoryva <no-reply@example.com>")).toEqual({ name: "Algoryva", email: "no-reply@example.com" });
+  });
+  it("accepts a quoted name and extra spaces", () => {
+    expect(parseFrom('  "Algoryva Team"   <team@example.com> ')).toEqual({ name: "Algoryva Team", email: "team@example.com" });
+  });
+  it("accepts a bare address with no name", () => {
+    expect(parseFrom("no-reply@example.com")).toEqual({ email: "no-reply@example.com" });
+  });
+});
+
+describe("brevoBody", () => {
+  it("builds the sender, recipient and both bodies Brevo needs", () => {
+    expect(brevoBody({ from: "Algoryva <no-reply@example.com>", to: "student@example.com", subject: "Hi", text: "plain", html: "<p>html</p>" })).toEqual({
+      sender: { name: "Algoryva", email: "no-reply@example.com" },
+      to: [{ email: "student@example.com" }],
+      subject: "Hi",
+      textContent: "plain",
+      htmlContent: "<p>html</p>",
+    });
+  });
+});
