@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+enum Level {
+  FOUNDATION
+  BEGINNER
+  CORE
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  COMING_SOON
+}
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+  EXPERT
+}
+enum Visibility {
+  PRIVATE
+  PUBLIC
+}
+enum ProblemKind {
+  INTERNAL
+  EXTERNAL
+}
+enum ResourceKind {
+  PDF
+  ARTICLE
+  VIDEO
+  VISUALIZATION
+  DOCS
+  PROBLEM_COLLECTION
+}
+enum SubmissionStatus {
+  PENDING
+  ACCEPTED
+  WRONG_ANSWER
+  TIME_LIMIT
+  RUNTIME_ERROR
+  COMPILE_ERROR
+}
+enum UpsolveReason {
+  COULD_NOT_SOLVE
+  SOLVED_AFTER_EDITORIAL
+  SOLVED_AFTER_HINT
+  IMPLEMENTATION_ERROR
+  MISUNDERSTOOD
+  RAN_OUT_OF_TIME
+}
+enum MistakeType {
+  CONCEPTUAL
+  IMPLEMENTATION
+  COMPLEXITY
+  EDGE_CASE
+  MISREAD
+  DEBUGGING
+  TIME_MANAGEMENT
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  suspended    Boolean  @default(false)
+  preferredLanguage String @default("python")
+  createdAt    DateTime @default(now())
+  progress     TopicProgress[]
+  submissions  Submission[]
+  mistakes     Mistake[]
+  reviews      ReviewItem[]
+  sessions     Session[]
+  solves       ProblemSolve[]
+  notes        Note[]
+  activities   Activity[]
+  experience   String?
+  onboarded    Boolean @default(false)
+  emailVerifiedAt DateTime?
+  tokens       VerificationToken[]
+  contestEntries ContestEntry[]
+  quizResults  QuizResult[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Topic {
+  id        String        @id @default(cuid())
+  slug      String        @unique
+  title     String
+  summary   String        @default("")
+  level     Level
+  status    ContentStatus @default(DRAFT)
+  position  Int           @default(0)
+  prerequisites TopicPrerequisite[] @relation("dependent")
+  dependents    TopicPrerequisite[] @relation("prerequisite")
+  lessons   Lesson[]
+  problems  ProblemTopic[]
+  resources ResourceTopic[]
+  progress  TopicProgress[]
+  quizResults QuizResult[]
+  @@index([level, position])
+}
+
+model TopicPrerequisite {
+  topicId        String
+  prerequisiteId String
+  topic          Topic @relation("dependent", fields: [topicId], references: [id], onDelete: Cascade)
+  prerequisite   Topic @relation("prerequisite", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+  @@id([topicId, prerequisiteId])
+}
+
+model Lesson {
+  id       String        @id @default(cuid())
+  topicId  String
+  slug     String
+  title    String
+  status   ContentStatus @default(DRAFT)
+  position Int           @default(0)
+  // Sections hold concept/intuition/example/mistakes text; code examples are per language.
+  sections LessonSection[]
+  topic    Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  @@unique([topicId, slug])
+}
+
+model LessonSection {
+  id       String @id @default(cuid())
+  lessonId String
+  kind     String // intro | intuition | example | mistakes | complexity
+  language String? // null = language-neutral prose; else python | cpp | java | js
+  body     String
+  position Int    @default(0)
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  @@index([lessonId, position])
+}
+
+// One abstraction for both kinds: INTERNAL uses statement/testcases, EXTERNAL uses url/source only.
+model Problem {
+  id         String      @id @default(cuid())
+  slug       String      @unique
+  title      String
+  kind       ProblemKind
+  difficulty Difficulty
+  status     ContentStatus @default(DRAFT)
+  source     String?     // e.g. leetcode, codeforces
+  externalUrl String?
+  statement  String?     // INTERNAL only; never copy third-party statements
+  timeLimitMs Int?
+  memoryLimitMb Int?
+  inputSpec  String?
+  outputSpec String?
+  constraints String?
+  position   Int @default(0)
+  normalizedUrl String? @unique // canonical URL; prevents duplicate external links
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+  solves     ProblemSolve[]
+  contests   ContestProblem[]
+  topics     ProblemTopic[]
+  testCases  TestCase[]
+  submissions Submission[]
+  mistakes   Mistake[]
+  @@index([kind, difficulty])
+}
+
+model ProblemTopic {
+  problemId String
+  topicId   String
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  topic     Topic   @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  @@id([problemId, topicId])
+  @@index([topicId])
+}
+
+model TestCase {
+  id        String  @id @default(cuid())
+  problemId String
+  input     String
+  expected  String
+  isSample  Boolean @default(false)
+  explanation String?
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  @@index([problemId])
+}
+
+model Submission {
+  id        String @id @default(cuid())
+  userId    String
+  problemId String
+  language  String
+  code      String
+  status    SubmissionStatus @default(PENDING)
+  runtimeMs Int?
+  createdAt DateTime @default(now())
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  @@index([userId, problemId, createdAt])
+}
+
+model Resource {
+  id          String       @id @default(cuid())
+  title       String
+  description String       @default("")
+  kind        ResourceKind
+  author      String?
+  source      String?
+  license     String?      // record actual permission; never assume
+  externalUrl String?
+  filePath    String?
+  visibility  Visibility   @default(PRIVATE)
+  topics      ResourceTopic[]
+}
+
+model ResourceTopic {
+  resourceId String
+  topicId    String
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  topic      Topic    @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  @@id([resourceId, topicId])
+}
+
+model TopicProgress {
+  userId      String
+  topicId     String
+  completedAt DateTime?
+  updatedAt   DateTime @updatedAt
+  user        User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic       Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  @@id([userId, topicId])
+}
+
+model Mistake {
+  id        String      @id @default(cuid())
+  userId    String
+  problemId String?
+  outsideTitle String?   // a problem that is not on this site, typed by the learner
+  outsideUrl   String?   // optional https link to that problem
+  type      MistakeType
+  misunderstood String
+  correctIdea   String
+  recognizeNextTime String
+  reason    UpsolveReason?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem   Problem? @relation(fields: [problemId], references: [id], onDelete: SetNull)
+  @@index([userId, type])
+}
+
+model ReviewItem {
+  id       String   @id @default(cuid())
+  userId   String
+  topicId  String
+  dueAt    DateTime
+  step     Int      @default(0) // index into 1,3,7,14,30 day ladder
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([userId, topicId])
+  @@index([userId, dueAt])
+}
+
+model ProblemSolve {
+  userId    String
+  problemId String
+  solvedAt  DateTime @default(now())
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  @@id([userId, problemId])
+  @@index([problemId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  tags      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, updatedAt])
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // topic_complete | problem_solved | review
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, createdAt])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // reset | verify
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId, type])
+}
+
+model AuthAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+  @@index([key, createdAt])
+}
+
+model Contest {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String   @default("")
+  durationMin Int
+  status      ContentStatus @default(DRAFT)
+  createdAt   DateTime @default(now())
+  problems    ContestProblem[]
+  entries     ContestEntry[]
+}
+
+model ContestProblem {
+  contestId String
+  problemId String
+  label     String
+  position  Int
+  contest   Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  problem   Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  @@id([contestId, problemId])
+  @@index([problemId])
+}
+
+model ContestEntry {
+  id        String   @id @default(cuid())
+  contestId String
+  userId    String
+  startedAt DateTime @default(now())
+  contest   Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  solves    ContestSolve[]
+  @@unique([contestId, userId])
+}
+
+model ContestSolve {
+  entryId   String
+  problemId String
+  solvedAt  DateTime @default(now())
+  entry     ContestEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  @@id([entryId, problemId])
+}
+
+// Best mastery-check result per user and topic. Passing is one of several mastery signals (see lib/mastery.ts); it never gates completing a topic.
+model QuizResult {
+  userId    String
+  topicId   String
+  bestScore Int
+  total     Int
+  attempts  Int       @default(1)
+  passedAt  DateTime?
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic     Topic     @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  @@id([userId, topicId])
+}
