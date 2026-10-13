@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://github.com/Abukiya/Algoryva">
+  <a href="https://github.com/tedacodder/Algoryva">
     <img src="public/brand/algoryva-lockup.svg" alt="Algoryva" width="360">
   </a>
 </p>
@@ -54,7 +54,7 @@ The learning loop is deliberately small:
 ### Local setup
 
 ```bash
-git clone https://github.com/Abukiya/Algoryva.git
+git clone https://github.com/tedacodder/Algoryva.git
 cd Algoryva
 
 npm install
